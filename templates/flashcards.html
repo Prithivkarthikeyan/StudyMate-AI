@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Flashcards & Chat - StudyMate</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #000000; 
+            color: #ffffff;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .ambient-blob1 {
+            position: fixed;
+            top: -10%;
+            left: -10%;
+            width: 500px;
+            height: 500px;
+            background: #333333; 
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: -1;
+            opacity: 0.6;
+        }
+        .ambient-blob2 {
+            position: fixed;
+            bottom: -10%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: #1a1a1a;
+            border-radius: 50%;
+            filter: blur(150px);
+            z-index: -1;
+            opacity: 0.8;
+        }
+
+        h1 {
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        p.subtitle {
+            color: #a3a3a3;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+            text-align: center;
+        }
+
+        .cards-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+            max-width: 1200px;
+            margin-bottom: 50px;
+        }
+
+        .flashcard {
+            background-color: transparent;
+            width: 320px;
+            height: 220px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.7s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .flashcard.flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-front, .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 25px;
+            box-sizing: border-box;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .flashcard-front {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .flashcard-back {
+            transform: rotateY(180deg);
+            font-size: 1.05em;
+            color: #d4d4d4;
+            line-height: 1.5;
+            background: rgba(255, 255, 255, 0.05); 
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        /* --- CHATBOT UI --- */
+        .chat-container {
+            width: 100%;
+            max-width: 800px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            box-sizing: border-box;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-box {
+            height: 300px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding-right: 10px;
+            margin-bottom: 20px;
+        }
+
+        .chat-box::-webkit-scrollbar {
+            width: 8px;
+        }
+        .chat-box::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+
+        .msg {
+            max-width: 80%;
+            padding: 12px 18px;
+            border-radius: 15px;
+            font-size: 1em;
+            line-height: 1.4;
+        }
+
+        .user-msg {
+            align-self: flex-end;
+            background: rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            border-bottom-right-radius: 2px;
+        }
+
+        .bot-msg {
+            align-self: flex-start;
+            background: rgba(0, 0, 0, 0.5);
+            color: #d4d4d4;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom-left-radius: 2px;
+        }
+
+        .chat-input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input-area input {
+            flex-grow: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 15px;
+            border-radius: 30px;
+            font-size: 1em;
+            outline: none;
+        }
+
+        .chat-input-area input:focus {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .chat-input-area button {
+            background: #ffffff;
+            color: #000000;
+            border: none;
+            padding: 0 25px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .chat-input-area button:hover {
+            background: #e0e0e0;
+            transform: scale(1.05);
+        }
+
+        .back-btn {
+            margin-top: 40px;
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 30px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-blob1"></div>
+    <div class="ambient-blob2"></div>
+
+    <h1>StudyMate AI</h1>
+    <p class="subtitle">Tap a card to flip, or ask questions below! ✨</p>
+
+    <div class="cards-container">
+        {% for card in flashcards %}
+        <div class="flashcard" onclick="this.classList.toggle('flipped')">
+            <div class="flashcard-inner">
+                <div class="flashcard-front">
+                    {{ card.q }}
+                </div>
+                <div class="flashcard-back">
+                    {{ card.a }}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="chat-container">
+        <h3 style="margin-top: 0; text-align: center; color: #ffffff;">Chat with PDF 🤖</h3>
+        <div class="chat-box" id="chatBox">
+            <div class="msg bot-msg">Hello! I have read your PDF. What would you like to know?</div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="userInput" placeholder="Ask a question about the document..." onkeypress="handleKeyPress(event)">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <a href="/" class="back-btn">← Upload Another PDF</a>
+
+    <script>
+        // We safely pass the PDF text from Python to JavaScript here
+        const pdfText = {{ pdf_text | tojson }};
+
+        function handleKeyPress(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const inputField = document.getElementById("userInput");
+            const chatBox = document.getElementById("chatBox");
+            const question = inputField.value.trim();
+
+            if (question === "") return;
+
+            // 1. Display User Message
+            const userDiv = document.createElement("div");
+            userDiv.className = "msg user-msg";
+            userDiv.textContent = question;
+            chatBox.appendChild(userDiv);
+
+            // Clear input and scroll down
+            inputField.value = "";
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // Add a temporary "Typing..." message
+            const botDiv = document.createElement("div");
+            botDiv.className = "msg bot-msg";
+            botDiv.textContent = "Thinking... 🤔";
+            chatBox.appendChild(botDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                // 2. Send Data to Flask Backend (/ask route)
+                const response = await fetch("/ask", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        question: question,
+                        pdf_text: pdfText
+                    })
+                });
+
+                const data = await response.json();
+
+                // 3. Update Bot Message with Actual Answer
+                if (data.answer) {
+                    botDiv.textContent = data.answer;
+                } else if (data.error) {
+                    botDiv.textContent = "Error: " + data.error;
+                }
+                
+                chatBox.scrollTop = chatBox.scrollHeight;
+
+            } catch (error) {
+                botDiv.textContent = "Sorry, something went wrong!";
+            }
+        }
+    </script>
+
+</body>
+</html>
